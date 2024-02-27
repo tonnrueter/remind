@@ -9,10 +9,10 @@ run <- function(start_subsequent_runs = TRUE) {
 
   load("config.Rdata")
 
-  if (cfg$pythonEnabled == "on"){
-    # Set environment variables so that reticulate finds the configured Python virtual env
-    Sys.setenv(RETICULATE_PYTHON = piamenv::pythonBinPath(".venv"))
-  }
+  # if (cfg$pythonEnabled == "on"){
+  #   # Set environment variables so that reticulate finds the configured Python virtual env
+  #   Sys.setenv(RETICULATE_PYTHON = piamenv::pythonBinPath(".venv"))
+  # }
 
   # Save start time
   timeGAMSStart <- Sys.time()

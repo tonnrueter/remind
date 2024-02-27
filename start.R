@@ -306,8 +306,9 @@ if (any(c("--reprepare", "--restart") %in% flags)) {
       }
       # Make sure all python requirements are installed
       if (cfg$pythonEnabled == "on") {
-        piamenv::updatePythonVirtualEnv()
-      }
+        # piamenv::updatePythonVirtualEnv()
+        message("SKIPPING piamenv::updatePythonVirtualEnv() for now.")
+      }      
       # Directly start runs that have a gdx file location given as path_gdx... or where this field is empty
       gdx_specified <- grepl(".gdx", cfg$files2export$start[path_gdx_list], fixed = TRUE)
       gdx_na <- is.na(cfg$files2export$start[path_gdx_list])

@@ -30,5 +30,5 @@ indf %>%
 # FIXME: Sometimes REMIND doesn't update the Python requirements 
 # automatically. If that happens, go to the REMIND root and run
 # piamenv::updatePythonVirtualEnv(). Has to be done there, not here!
-cat("Sourcing python script...")
-system(paste0("python source_climate_assessment.py ", outfname))
+# cat("Sourcing python script...")
+# system(paste0("python source_climate_assessment.py ", outfname))
