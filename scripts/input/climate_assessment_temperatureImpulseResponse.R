@@ -1,4 +1,4 @@
-# |  (C) 2006-2024 Potsdam Institute for Climate Impact Research (PIK)
+# |  (C) 2006-2020 Potsdam Institute for Climate Impact Research (PIK)
 # |  authors, and contributors see CITATION.cff file. This file is part
 # |  of REMIND and licensed under AGPL-3.0-or-later. Under Section 7 of
 # |  AGPL-3.0, you are granted additional permissions described in the
@@ -20,7 +20,8 @@ igdx(system("dirname $( which gams )", intern = TRUE))
 load(file.path("config.Rdata"), envir = e <- new.env())
 cfg <- e$cfg
 fileBaseScen <- paste0(
-  "./climate-assessment-data/ar6_climate_assessment_", as.character(cfg$title), "_harmonized_infilled.csv")
+  "./climate-assessment-data/ar6_climate_assessment_", as.character(cfg$title), "_harmonized_infilled.csv"
+)
 
 # Get output directory to build full paths, some commands require full paths
 outputDir <- getwd()
@@ -35,7 +36,7 @@ if (!file.exists(logFile)) {
 }
 
 # Use a separate temporary climate-assessment folder for the TIRF calculation
-# Not doing so would interfere with the regular non-TIRF MAGICC files, and 
+# Not doing so would interfere with the regular non-TIRF MAGICC files, and
 # will make it tricky to manipulate emissions between iterations
 climateTempDir <- file.path(outputDir, "climate-assessment-data-tirf")
 if (!dir.exists(climateTempDir)) {
@@ -44,7 +45,7 @@ if (!dir.exists(climateTempDir)) {
 } else {
   createdClimateTempDir <- FALSE
 }
-cat(climateTempDir)
+# cat(climateTempDir)
 
 # Set up climate-assessment environment
 # TONN TODO: Most of what's down here is exactly the same as in climate_assessment_run.R
@@ -64,10 +65,10 @@ if (is.null(cfg$climate_assessment_magicc_prob_file_iteration)) cfg$climate_asse
 # Set up climate-assessment related configuration and output files
 climateAssessmentEmi <- file.path(climateTempDir, paste0("ar6_climate_assessment_", scenarioName, ".csv"))
 if (!file.exists(climateAssessmentEmi)) {
-    file.create(climateAssessmentEmi)
-    createdOutputCsv <- TRUE
+  file.create(climateAssessmentEmi)
+  createdOutputCsv <- TRUE
 } else {
-    createdOutputCsv <- FALSE
+  createdOutputCsv <- FALSE
 }
 
 # The base name, that climate-assessment uses to derive it's output names
@@ -96,7 +97,6 @@ probabilisticFileModified <- normalizePath("probmod.json")
 jsonlite::write_json(allparsets, probabilisticFileModified, pretty = TRUE, auto_unbox = TRUE)
 
 logMsg <- paste0(date(), " =================== SET UP climate-assessment scripts environment ===================\n")
-cat(logMsg)
 capture.output(cat(logMsg), file = logFile, append = TRUE)
 
 # Create working folder for climate-assessment files
@@ -108,9 +108,9 @@ dir.create(magiccWorkersDir, recursive = TRUE, showWarnings = FALSE)
 
 # Character vector of all required MAGICC7 environment variables
 magiccEnvs <- c(
-  "MAGICC_EXECUTABLE_7"    = magiccBinFile,    # Specifies the path to the MAGICC executable
+  "MAGICC_EXECUTABLE_7"    = magiccBinFile, # Specifies the path to the MAGICC executable
   "MAGICC_WORKER_ROOT_DIR" = magiccWorkersDir, # Directory of magicc workers
-  "MAGICC_WORKER_NUMBER"   = 1                 # TODO: Get this from slurm or nproc
+  "MAGICC_WORKER_NUMBER"   = 1 # TODO: Get this from slurm or nproc
 )
 
 gamsEnvs <- c(
@@ -187,10 +187,6 @@ runClimateEmulatorCmd <- paste(
   "--scenario-batch-size", 1,
   "--probabilistic-file", probabilisticFileModified
 )
-# Get conda environment folder
-condaDir <- "/p/projects/rd3mod/python/environments/scm_magicc7"
-# Command to activate the conda environment
-condaCmd <- paste0("module load conda/2023.09; source activate ", condaDir, ";")
 
 logMsg <- paste0(
   date(), "  CLIMATE-ASSESSMENT ENVIRONMENT:\n",
@@ -203,25 +199,20 @@ logMsg <- paste0(
   "  scriptsDir            = '", scriptsDir, "' exists? ", dir.exists(scriptsDir), "\n",
   "  magiccBinFile         = '", magiccBinFile, "' exists? ", file.exists(magiccBinFile), "\n",
   "  magiccWorkersDir      = '", magiccWorkersDir, "' exists? ", dir.exists(magiccWorkersDir), "\n",
-  "  condaDir      = '", condaDir, "' exists? ", dir.exists(condaDir), "\n\n",
   "  ENVIRONMENT VARIABLES:\n",
   "  MAGICC_EXECUTABLE_7    = ", Sys.getenv("MAGICC_EXECUTABLE_7"), "\n",
   "  MAGICC_WORKER_ROOT_DIR = ", Sys.getenv("MAGICC_WORKER_ROOT_DIR"), "\n",
   "  MAGICC_WORKER_NUMBER   = ", Sys.getenv("MAGICC_WORKER_NUMBER"), "\n",
   "  R_GAMS_SYSDIR          = ", Sys.getenv("R_GAMS_SYSDIR"), "\n",
-  date(), " =================== CONDA ACTIVATION COMMAND ===================\n",
-  condaCmd, "'\n",
   date(), " =================== SKIP climate-assessment infilling & harmonization ===================\n",
   date(), " =================== RUN climate-assessment model runs ===================\n",
   runClimateEmulatorCmd, "'\n"
 )
-
-cat(logMsg)
 capture.output(cat(logMsg), file = logFile, append = TRUE)
 
 # Start actual runs ====================================================
 timeStartEmulation <- Sys.time()
-system(paste0(condaCmd, runClimateEmulatorCmd))
+system(paste(runClimateEmulatorCmd, "&>>", logFile))
 timeStopEmulation <- Sys.time()
 
 # Actual runs done, read the output, already filtering what we need
@@ -242,7 +233,7 @@ tirf <- mifAllPulsesClimate %>%
   ) %>%
   as.data.frame()
 
-#calculate difference to baseline to get TIRF, normalize to 1 GtCO2eq emission.
+# calculate difference to baseline to get TIRF, normalize to 1 GtCO2eq emission.
 tirf <- tirf %>%
   group_by(period, year_pulse) %>%
   summarize(tirf = (value[size_pulse != 0] - value[size_pulse == 0]) / size_pulse[size_pulse != 0] / (44 / 12)) %>%
@@ -261,14 +252,14 @@ tirf <- tirf %>%
 
 # Assume tirf has the same shape in year_pulse 2010 as in 2020
 tirf <- rbind(
-    tirf %>%
-      filter(year_pulse == 2020) %>%
-      mutate(year_pulse = year_pulse - 10, period = period - 10),
-    tirf
-  ) %>%
+  tirf %>%
+    filter(year_pulse == 2020) %>%
+    mutate(year_pulse = year_pulse - 10, period = period - 10),
+  tirf
+) %>%
   filter(period >= 2010)
 
-# NOTE the result for 2150 is just zero, don't know why. work around by assuming the TIRF in 2150 is equal to the one 
+# NOTE the result for 2150 is just zero, don't know why. work around by assuming the TIRF in 2150 is equal to the one
 # in 2130. From 2150 to 2250, assume the same.
 tirf <- rbind(
   tirf,
@@ -286,18 +277,19 @@ tirfInterpolated <- tirf %>%
   group_by(year_pulse) %>%
   mutate(period = period - year_pulse)
 
-# only try to interpolate if there is at least two datapoints (not the case for the earliet pulse in the last couple 
+# only try to interpolate if there is at least two datapoints (not the case for the earliet pulse in the last couple
 # of years :)
 tirfInterpolated <- tirfInterpolated %>%
   group_by(period) %>%
   filter(length(tirf) > 1)
 
-#interpolation:
+# interpolation:
 oupt <- do.call(rbind, lapply(as.integer(unique(tirfInterpolated$period)), function(p) {
   dt <- tirfInterpolated %>% filter(period == p)
   out <- approx(dt$year_pulse, dt$tirf,
     xout = seq(min(tirfInterpolated$year_pulse), max(tirfInterpolated$year_pulse), 1),
-    method = "linear", yleft = 0, yright = 0, rule = 2:1)
+    method = "linear", yleft = 0, yright = 0, rule = 2:1
+  )
   out <- data.frame(tall1 = out$x, tirf = out$y)
   out$tall <- p
   out
@@ -322,4 +314,3 @@ writeToGdx <- function(file = "pm_magicc_temperatureImpulseResponse", df) {
 # write to GDX:
 writeToGdx("pm_magicc_temperatureImpulseResponse", oupt)
 print("...done.")
-
