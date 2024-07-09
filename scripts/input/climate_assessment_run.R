@@ -47,7 +47,6 @@ if (!dir.exists(climateTempDir)) {
 } else {
   createdClimateTempDir <- FALSE
 }
-cat(climateTempDir)
 
 # Create dir to archive the climate assessment data after script has finished
 if (archiveClimateAssessmentData) {
