@@ -16,13 +16,17 @@ import xarray as xr
 # import copy
 import json
 
-# TONN REMOVE start
-# If these are already set, it shouldn't override it. We actually may not want to have a default but just throw an error if not set
-os.environ["MAGICC_EXECUTABLE_7"]       =   "/p/projects/piam/abrahao/scratch/module_climate_tests/climate-assessment-files/magicc-v7.5.3/bin/magicc"
-os.environ["MAGICC_WORKER_ROOT_DIR"]    =   "/p/projects/piam/abrahao/scratch/methane/methane_scm/workers"
+class EnvironmentError(Exception):
+    pass
 
-LOGGER = logging.getLogger(__name__) # We don't need this
-# TONN REMOVE end
+# Check required environment variables. Fail if they are not set
+for env_var in ["MAGICC_EXECUTABLE_7", "MAGICC_WORKER_ROOT_DIR"]:
+    if os.environ.get(env_var, '') == '':
+        # If clause covers both cases in which the env var is not set at all 
+        # as well as the case in which it is set to an empty string
+        raise EnvironmentError(f"{env_var} does not exist")
+    # Optional debug print
+    print(f"Found '{env_var}' = '{os.environ.get(env_var)}' ")
 
 # %%
 # Parsing arguments
