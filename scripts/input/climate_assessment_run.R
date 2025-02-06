@@ -214,7 +214,8 @@ runHarmoniseAndInfillCmd <- paste(
   "python", file.path(scriptsDir, "run_harm_inf.py"),
   climateAssessmentEmi,
   climateTempDir,
-  "--infilling-database", infillingDatabaseFile
+  "--infilling-database", infillingDatabaseFile,
+  "&>>", logFile # Append stdout and stderr to log file
 )
 
 runClimateEmulatorCmd <- paste(
@@ -225,21 +226,106 @@ runClimateEmulatorCmd <- paste(
   "--endyear", 2250,
   "--num-cfgs", nparsets,
   "--scenario-batch-size", 1,
-  "--probabilistic-file", probabilisticFile
+  "--probabilistic-file", probabilisticFile,
+  "&>>", logFile # Append stdout and stderr to log file
 )
 
+#
+# PYTHON ENVIROIUMENT HANDLING
+#
+# On the PIK cluster the setupEnvCmd & teardownEnvCmd commands typically evaluate to
+#
+#   module load anaconda/2024.10; source activate /p/projects/rd3mod/python/environments/scm_magicc7;
+#
+# and
+#
+#   conda deactivate; module unload anaconda/2024.10;
+#
+# respectively
 
-# Get conda environment folder
-condaDir <- "/p/projects/rd3mod/python/environments/scm_magicc7"
-# Command to activate the conda environment, changes depending on the cluster
-if (file.exists("/p/system/modulefiles/defaults/piam/1.25")) {
-  condaCmd <- paste0("module load conda/2023.09; source activate ", condaDir, ";")
-} else {
-  condaCmd <- paste0("module load anaconda/2023.09; source activate ", condaDir, ";")
+# Get conda environment folder, e.g. "/p/projects/rd3mod/python/environments/scm_magicc7"
+# condaEnv <- normalizePath(cfg$pythonPath, mustWork = TRUE)
+# condaBin <- Sys.which("conda")
+# # Check if conda is available, otherwise use module load
+# if (condaBin == "") {
+#   setupEnvCmd <- paste("module load", condaEnv, "&>>", logFile, ";")
+#   teardownEnvCmd <- "module unload anaconda/2024.10;"
+# } else {
+#   setupEnvCmd <- ""
+#   teardownEnvCmd <- ""
+# }
+# # Check if conda environment is active, concatenate setupEnvCmd with source (conda) (de)activate command if not
+# if (Sys.getenv("CONDA_PREFIX") == "") {
+#   setupEnvCmd <- paste(setupEnvCmd, "source activate", condaEnv, ";")
+#   # Pre-pend here since conda has to be deactivated before module unload
+#   teardownEnvCmd <- paste("conda deactivate;", teardownEnvCmd)
+# }
+# # Sanity check: Python binary is in the conda environment? Fail if not
+# pythonBin <- Sys.which("python")
+# if (startsWith(pythonBin, condaEnv)) {
+#   stop("Python binary is not in the conda environment")
+# }
+
+#
+# NEW HELPER FUNCTIONS
+#
+initPyEnvCmds <- function(pythonPath, logFile = stdout(), debug = FALSE) {
+  condaEnv <- normalizePath(pythonPath, mustWork = TRUE)
+  condaBin <- Sys.which("conda")
+  # Check if conda is available, otherwise use module load. PIK cluster specific!
+  if (condaBin == "") {
+    setupEnvCmd <- paste("module load", condaEnv, "&>>", logFile, ";")
+    teardownEnvCmd <- "module unload anaconda/2024.10;"
+  } else {
+    setupEnvCmd <- ""
+    teardownEnvCmd <- ""
+  }
+  # Check if conda environment is active, concatenate setupEnvCmd with source (conda) (de)activate command if not
+  if (Sys.getenv("CONDA_PREFIX") == "") {
+    setupEnvCmd <- paste(setupEnvCmd, "source activate", condaEnv, ";")
+    # Pre-pend here since conda has to be deactivated before module unload
+    teardownEnvCmd <- paste("conda deactivate;", teardownEnvCmd)
+  }
+  if (debug) {
+    setupEnvCmd <- paste(setupEnvCmd, "echo \"#### initPyEnvCmds\"; which python; which conda;")
+  }
+  return(list(setup = setupEnvCmd, teardown = teardownEnvCmd))
 }
 
+runInEnv <- function(cmd, pyEnv = list(setup = "", teardown = ""), verbose = FALSE) {
+  commands <- lapply(
+    list(pyEnv$setup, cmd, pyEnv$teardown),
+    # Ensure that each command ends with a semicolon
+    function(command) {
+      if (nchar(command) > 0 && substr(command, nchar(command), nchar(command)) != ";") {
+        return(paste0(command, ";"))
+      }
+      return(command)
+    }
+  )
+  if (verbose) {
+    logMsg <- paste0(
+      date(), "  About to run\n",
+      commands, "\n"
+    )
+    capture.output(cat(logMsg), file = logFile, append = TRUE)
+  }
+  system(paste(commands))
+}
+
+# Sanity check: Python binary is in the conda environment? Fail if not
+# pythonBin <- Sys.which("python")
+# if (!startsWith(pythonBin, condaEnv)) {
+#   stop("Python binary is not in the conda environment")
+# }
+pyEnv <- initPyEnvCmds(cfg$pythonPath, logFile, debug = TRUE)
+
 logMsg <- paste0(
-  date(), "  CLIMATE-ASSESSMENT ENVIRONMENT:\n",
+  date(),
+  "  PYTHON ENVIRONMENT:\n",
+  "  setupEnvCmd           = '", pyEnv$setup, "'\n",
+  "  teardownEnvCmd        = '", pyEnv$teardown, "'\n",
+  "  CLIMATE-ASSESSMENT ENVIRONMENT:\n",
   "  climateTempDir        = '", climateTempDir, "' exists? ", dir.exists(climateTempDir), "\n",
   "  baseFn                = '", baseFn, "'\n",
   "  probabilisticFile     = '", probabilisticFile, "' exists? ", file.exists(probabilisticFile), "\n",
@@ -247,7 +333,6 @@ logMsg <- paste0(
   "  scriptsDir            = '", scriptsDir, "' exists? ", dir.exists(scriptsDir), "\n",
   "  magiccBinFile         = '", magiccBinFile, "' exists? ", file.exists(magiccBinFile), "\n",
   "  magiccWorkersDir      = '", magiccWorkersDir, "' exists? ", dir.exists(magiccWorkersDir), "\n\n",
-  "  condaCmd              = '", condaCmd, "'\n",
   "  ENVIRONMENT VARIABLES:\n",
   "  MAGICC_EXECUTABLE_7    = ", Sys.getenv("MAGICC_EXECUTABLE_7"), "\n",
   "  MAGICC_WORKER_ROOT_DIR = ", Sys.getenv("MAGICC_WORKER_ROOT_DIR"), "\n",
@@ -262,7 +347,8 @@ timeStopSetUpAssessment <- Sys.time()
 ############################# HARMONIZATION/INFILLING #############################
 
 timeStartHarmInf <- Sys.time()
-system(paste(condaCmd, runHarmoniseAndInfillCmd, "&>>", logFile))
+# system(paste(setupEnvCmd, runHarmoniseAndInfillCmd, teardownEnvCmd))
+runInEnv(runHarmoniseAndInfillCmd, pyEnv)
 timeStopHarmInf <- Sys.time()
 
 ############################# RUNNING MODEL #############################
@@ -276,7 +362,8 @@ logMsg <- paste0(
 capture.output(cat(logMsg), file = logFile, append = TRUE)
 
 timeStartEmulation <- Sys.time()
-system(paste(condaCmd, runClimateEmulatorCmd, "&>>", logFile))
+# system(paste(setupEnvCmd, runClimateEmulatorCmd, teardownEnvCmd))
+runInEnv(runClimateEmulatorCmd, pyEnv)
 timeStopEmulation <- Sys.time()
 
 ############################# POSTPROCESS CLIMATE OUTPUT #############################
