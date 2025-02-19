@@ -11,8 +11,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      - name: Install GitHub CLI
-        run: sudo apt-get install gh
+      - name: Set up GitHub CLI
+        uses: actions/setup-gh@v2
+        with:
+          token: ${{ secrets.AUTO_DEV_VERSION_REMIND }}
 
       - name: Check PR description
         id: check_pr
@@ -26,7 +28,5 @@ jobs:
 
       - name: Set PR status
         if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.AUTO_DEV_VERSION_REMIND }}
         run: |
           gh pr comment ${{ github.event.pull_request.number }} --body "Unselected checkboxes found in the 'Type of change' section. Please delete unselected items in this section."
