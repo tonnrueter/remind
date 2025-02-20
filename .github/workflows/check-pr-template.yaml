@@ -8,5 +8,6 @@ jobs:
     steps:
       - name: Check PR description
         id: check_pr_template
-        run: echo "The description of your PR is ${{ github.event.pull_request.body }}"
+        run: | 
+          printf "The description of your PR is:\n%s\n" "${{ github.event.pull_request.body }}"
 
