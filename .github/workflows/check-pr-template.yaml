@@ -7,6 +7,9 @@ on:
 jobs:
   check-pr:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.AUTO_DEV_VERSION_REMIND }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
