@@ -9,6 +9,7 @@ jobs:
       - name: Check PR description
         id: check_pr_template
         run: |
-           pr_body='${{ github.event.pull_request.body }}'
-           echo "$pr_body"
+           PR_DESCRIPTION='${{ github.event.pull_request.body }}'
+           TYPE_OF_CHANGE_SECTION=$(echo "$PR_DESCRIPTION" | sed -n '/## Type of change/,/## Checklist:/p')
+           echo "$TYPE_OF_CHANGE_SECTION"
 
