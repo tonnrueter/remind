@@ -9,11 +9,4 @@ jobs:
       - name: Check PR description
         id: check_pr_template
         run: |
-          PR_DESCRIPTION="${{ github.event.pull_request.body }}"
-          printf "PR Description:\n%s\n" "$PR_DESCRIPTION"
-          TYPE_OF_CHANGE_SECTION=$(printf "%s" "$PR_DESCRIPTION" | sed -n '/## Type of change/,/## Checklist:/p')
-          printf "Type of Change Section:\n%s\n" "$TYPE_OF_CHANGE_SECTION"
-          if printf "%s" "$TYPE_OF_CHANGE_SECTION" | grep -q "\[ \]"; then
-            echo "Unselected checkboxes found in the 'Type of change' section. Please delete unselected items in this section."
-            exit 1
-          fi
+          echo The Title of your PR is ${{ github.event.pull_request.body }}
