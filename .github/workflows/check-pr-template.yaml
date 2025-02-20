@@ -11,14 +11,6 @@ jobs:
       GH_TOKEN: ${{ secrets.AUTO_DEV_VERSION_REMIND }}
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
-
-      - name: Set up GitHub CLI
-        uses: actions/setup-gh@v2
-        with:
-          token: ${{ secrets.AUTO_DEV_VERSION_REMIND }}
-
       - name: Check PR description
         id: check_pr
         run: |
@@ -32,4 +24,6 @@ jobs:
       - name: Set PR status
         if: failure()
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} --body "Unselected checkboxes found in the 'Type of change' section. Please delete unselected items in this section."
+          gh pr comment ${{ github.event.pull_request.number }} --body "Unselected checkboxes found in the 'Type of change' section of the pull request description. Please delete unselected items in this section."
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_DEV_VERSION_REMIND }}
