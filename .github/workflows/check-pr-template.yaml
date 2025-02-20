@@ -25,7 +25,7 @@ jobs:
           FILE="pull_request_template.md"
           TYPE_OF_CHANGE_SECTION=$(awk '/## Type of change/,/## Checklist:/' "$FILE")
           if echo "$TYPE_OF_CHANGE_SECTION" | grep -q "\[ \]"; then
-            echo "Unselected checkboxes found in the 'Type of change' section. Please delete unselected items in this section."
+            echo "Unselected checkboxes found in the 'Type of change' section of the pull request description. Please delete unselected items in this section."
             exit 1
           fi
 
