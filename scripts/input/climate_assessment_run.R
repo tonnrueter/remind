@@ -8,9 +8,9 @@
 require(remind2)
 require(quitte)
 require(piamInterfaces)
+require(lucode2)
 require(yaml)
 require(tidyverse)
-require(lucode2)
 require(purrr)
 require(gdxrrw) # Needs an environmental variable to be set, see below
 require(R.utils)
@@ -22,15 +22,17 @@ renameVariableMagicc7ToRemind <- function(varName) {
   return(varName)
 }
 
+############################# BASIC CONFIGURATION #############################
+
 # This script is meant to run the full IIASA climate assessment using a single parameter set,
 # meant to be used between REMIND iterations
 
 outputDir <- getwd()
-gdxPath <- file.path(outputDir, "fulldata_postsolve.gdx")
-cfgPath <- file.path(outputDir, "cfg.txt")
-cfg <- read_yaml(cfgPath)
+gdxPath   <- file.path(outputDir, "fulldata_postsolve.gdx")
+cfgPath   <- file.path(outputDir, "cfg.txt")
+cfg       <- read_yaml(cfgPath)
+scenario  <- getScenNames(outputDir)
 archiveClimateAssessmentData <- cfg$climate_assessment_archive
-timestamp <- format(timeStartSetUpScript, "%Y%m%d_%H%M%S")
 
 logFile <- file.path(outputDir, paste0("log_climate.txt"))
 if (!file.exists(logFile)) {
@@ -40,18 +42,21 @@ if (!file.exists(logFile)) {
   createdLogFile <- FALSE
 }
 
-climateTempDir <- file.path(outputDir, "climate-assessment-data")
+climateTempDir <- normalizePath(file.path(outputDir, "climate-assessment-data"), mustWork = FALSE)
 if (!dir.exists(climateTempDir)) {
   dir.create(climateTempDir, showWarnings = FALSE)
   createdClimateTempDir <- TRUE
 } else {
   createdClimateTempDir <- FALSE
 }
-cat(climateTempDir)
 
 # Create dir to archive the climate assessment data after script has finished
+timestamp <- format(timeStartSetUpScript, "%Y%m%d_%H%M%S")
 if (archiveClimateAssessmentData) {
-  climateArchiveDir <- file.path(climateTempDir, "archive", paste0("iteration_", timestamp))
+  climateArchiveDir <- normalizePath(
+    file.path(climateTempDir, "archive", paste0("iteration_", timestamp)),
+    mustWork = FALSE
+  )
   if (!dir.exists(climateArchiveDir)) {
     dir.create(climateArchiveDir, recursive = TRUE, showWarnings = FALSE)
     createdClimateArchiveDir <- TRUE
@@ -59,6 +64,23 @@ if (archiveClimateAssessmentData) {
     createdClimateArchiveDi <- FALSE
   }
 }
+
+logmsg <- paste0(
+  date(), " climate_assessment_run.R:\n",
+  "=================== CONFIGURATION STARTED ==================================\n",
+  "  outputDir = '",             outputDir,              "' exists? ", file.exists(outputDir), "\n",
+  "  gdxPath = '",               gdxPath,                "' exists? ", file.exists(gdxPath), "\n",
+  "  cfgPath = '",               cfgPath,                "' exists? ", file.exists(cfgPath), "\n",
+  "  logFile = '",               logFile,                "' exists? ", file.exists(logFile), "\n",
+  if (createdLogFile) "Created logfile        '" else "Append to logFile      '", logFile, "'\n",
+  "  scenario = '",              scenario, "'\n",
+  "  climateAssessmentYaml = '", climateAssessmentYaml, "' exists? ", file.exists(climateAssessmentYaml), "\n",
+  "  climateAssessmentEmi = '",  climateAssessmentEmi,  "' exists? ", file.exists(climateAssessmentEmi), "\n",
+  date(), "=================== EXTRACT REMIND emission data ===========================\n",
+  "  MAGICC7_AR6.R: Extracting REMIND emission data\n"
+)
+cat(logmsg)
+capture.output(cat(logmsg), file = logFile, append = TRUE)
 
 logMsg <- paste0(
   date(), " climate_assessment_run.R:\n",
@@ -76,14 +98,12 @@ capture.output(cat(logMsg), file = logFile, append = TRUE)
 # POSTPROCESSING GDX FILE
 #
 
-# Get the scenario name
-scenarioName <- getScenNames(outputDir)
 
 # Set up climate-assessment related configuration and output files
 climateAssessmentYaml <- file.path(
   system.file(package = "piamInterfaces"), "iiasaTemplates", "climate_assessment_variables.yaml"
 )
-climateAssessmentEmi <- file.path(climateTempDir, paste0("ar6_climate_assessment_", scenarioName, ".csv"))
+climateAssessmentEmi <- file.path(climateTempDir, paste0("ar6_climate_assessment_", scenario, ".csv"))
 if (!file.exists(climateAssessmentEmi)) {
   file.create(climateAssessmentEmi)
   createdOutputCsv <- TRUE
@@ -102,19 +122,9 @@ timeStopSetUpScript <- Sys.time()
 #
 # Run emissions report here
 # Includes air pollutant emissions from reportEmiAirPol()
-#
-timeStartPreprocessing <- Sys.time()
-emiReport <- reportEmiForClimateAssessment(gdxPath)
-
-logMsg <- paste0(
-  date(), " climate_assessment_prepare.R: Done reportEmi, start to wrangle emissions report into shape\n"
-)
-capture.output(cat(logMsg), file = logFile, append = TRUE)
-
-#
 # Since the script is called in between runs, we need convert the emissions report each time
 #
-climateAssessmentInputData <- emiReport %>%
+climateAssessmentInputData <- reportEmiForClimateAssessment(gdxPath) %>%
   as.quitte() %>%
   # Consider only the global region
   filter(region %in% c("GLO", "World")) %>%
@@ -127,7 +137,7 @@ climateAssessmentInputData <- emiReport %>%
     iiasatemplate = climateAssessmentYaml,
     logFile = logFile
   ) %>%
-  mutate(region = factor("World"), scenario = factor(scenarioName)) %>%
+  mutate(region = factor("World"), scenario = factor(scenario)) %>%
   # Rename the columns using str_to_title which capitalizes the first letter of each word
   rename_with(str_to_title) %>%
   # Transforms the yearly values for each variable from a long to a wide format. The resulting data frame then has
@@ -148,10 +158,10 @@ capture.output(cat(logMsg), file = logFile, append = TRUE)
 #
 timeStartSetUpAssessment <- Sys.time()
 # Set default values for the climate assessment config data in case they are not available for backward compatibility
-if (is.null(cfg$climate_assessment_root)) cfg$climate_assessment_root <- "/p/projects/rd3mod/python/climate-assessment/src/"
-if (is.null(cfg$climate_assessment_infiller_db)) cfg$climate_assessment_infiller_db <- "/p/projects/rd3mod/climate-assessment-files/1652361598937-ar6_emissions_vetted_infillerdatabase_10.5281-zenodo.6390768.csv"
-if (is.null(cfg$climate_assessment_magicc_bin)) cfg$climate_assessment_magicc_bin <- "/p/projects/rd3mod/climate-assessment-files/magicc-v7.5.3/bin/magicc"
-if (is.null(cfg$climate_assessment_magicc_prob_file_iteration)) cfg$climate_assessment_magicc_prob_file_iteration <- "/p/projects/rd3mod/climate-assessment-files/parsets/RCP20_50.json"
+# if (is.null(cfg$climate_assessment_root)) cfg$climate_assessment_root <- "/p/projects/rd3mod/python/climate-assessment/src/"
+# if (is.null(cfg$climate_assessment_infiller_db)) cfg$climate_assessment_infiller_db <- "/p/projects/rd3mod/climate-assessment-files/1652361598937-ar6_emissions_vetted_infillerdatabase_10.5281-zenodo.6390768.csv"
+# if (is.null(cfg$climate_assessment_magicc_bin)) cfg$climate_assessment_magicc_bin <- "/p/projects/rd3mod/climate-assessment-files/magicc-v7.5.3/bin/magicc"
+# if (is.null(cfg$climate_assessment_magicc_prob_file_iteration)) cfg$climate_assessment_magicc_prob_file_iteration <- "/p/projects/rd3mod/climate-assessment-files/parsets/RCP20_50.json"
 
 # The base name, that climate-assessment uses to derive it's output names
 baseFn <- sub("\\.csv$", "", basename(climateAssessmentEmi))
@@ -164,10 +174,10 @@ probabilisticFile <- normalizePath(cfg$climate_assessment_magicc_prob_file_itera
 scriptsDir <- normalizePath(file.path(cfg$climate_assessment_root, "scripts"))
 magiccBinFile <- normalizePath(file.path(cfg$climate_assessment_magicc_bin))
 magiccWorkersDir <- file.path(normalizePath(climateTempDir), "workers")
-gamsRDir <- Sys.getenv("GAMSROOT")
-if (nchar(gamsRDir) <= 0) {
-  warning("Empty GAMSROOT environment variable")
-}
+# gamsRDir <- Sys.getenv("GAMSROOT")
+# if (nchar(gamsRDir) <= 0) {
+#   warning("Empty GAMSROOT environment variable")
+# }
 
 # Read parameter sets file to ascertain how many parsets there are
 allparsets <- read_yaml(probabilisticFile)
@@ -182,24 +192,43 @@ dir.create(magiccWorkersDir, recursive = TRUE, showWarnings = FALSE)
 #
 # SET UP MAGICC ENVIRONMENT VARIABLES
 #
+initPyEnv <- function(envVars = c(), logFile = NULL, forceEnvVars = FALSE) {
+  condaBin <- Sys.which("conda")
+  # Check if conda is available, otherwise use module load. PIK cluster specific!
+  if (condaBin == "") {
+    # Note: THIS HAS GOTTA BE `&>>` not `>> ... 2&>1`. The latter won't actually load anaconda for some reason..
+    setupEnvCmd <- trimws(paste(
+      "module load anaconda/2024.10",
+      if (!is.null(logFile)) paste("&>>", logFile)
+    ))
+    teardownEnvCmd <- "module unload anaconda/2024.10"
+  } else {
+    setupEnvCmd <- ""
+    teardownEnvCmd <- ""
+  }
+  if (length(envVars) > 0) {
+    # Set environment variables if they are not already set
+    alreadySet <- if (forceEnvVars) rep(TRUE, length(envVars)) else lapply(Sys.getenv(names(envVars)), nchar) > 0
+    if (any(!alreadySet)) do.call(Sys.setenv, as.list(envVars[!alreadySet]))
+  }
+  return(list(setup = setupEnvCmd, teardown = teardownEnvCmd))
+}
 
-# Character vector of all required MAGICC7 environment variables
-magiccEnvs <- c(
-  "MAGICC_EXECUTABLE_7"    = magiccBinFile, # Specifies the path to the MAGICC executable
-  "MAGICC_WORKER_ROOT_DIR" = magiccWorkersDir, # Directory of magicc workers
-  "MAGICC_WORKER_NUMBER"   = 1 # TODO: Get this from slurm or nproc
-)
-
-gamsEnvs <- c(
-  "R_GAMS_SYSDIR" = gamsRDir
-)
-
-environmentVariables <- c(magiccEnvs, gamsEnvs)
-
-# Check if all necessary environment variables are set
-alreadySet <- lapply(Sys.getenv(names(environmentVariables)), nchar) > 0
-# Only set those environment variables that are not already set
-if (any(!alreadySet)) do.call(Sys.setenv, as.list(environmentVariables[!alreadySet]))
+# initPyEnvCmds <- initPyEnv()
+# initPyEnvCmds <- initPyEnv(envVars = c(
+#   "MAGICC_EXECUTABLE_7"    = "/p/projects/rd3mod/climate-assessment-files/magicc-v7.5.3/bin/magicc",
+#   "MAGICC_WORKER_ROOT_DIR" = "/p/tmp/tonnru/remind/output/h_cpol_KLW_d50_2025-02-06_18.10.48/climate-assessment-data/workers",
+#   "MAGICC_WORKER_NUMBER"   = 1
+# ))
+initPyEnvCmds <- initPyEnv(envVars = c(
+  "MAGICC_EXECUTABLE_7"    = magiccBinFile,
+  "MAGICC_WORKER_ROOT_DIR" = magiccWorkersDir,
+  "MAGICC_WORKER_NUMBER"   = 1
+))
+initPyEnvCmds
+Sys.getenv("MAGICC_EXECUTABLE_7")
+Sys.getenv("MAGICC_WORKER_ROOT_DIR")
+Sys.getenv("MAGICC_WORKER_NUMBER")
 
 #
 # BUILD climate-assessment RUN COMMANDS
@@ -214,8 +243,8 @@ runHarmoniseAndInfillCmd <- paste(
   "python", file.path(scriptsDir, "run_harm_inf.py"),
   climateAssessmentEmi,
   climateTempDir,
-  "--infilling-database", infillingDatabaseFile,
-  ">>", logFile, "2&>1" # Append stdout and stderr to log file
+  "--infilling-database", infillingDatabaseFile#,
+  # ">>", logFile, "2&>1" # Append stdout and stderr to log file
 )
 
 runClimateEmulatorCmd <- paste(
@@ -226,8 +255,8 @@ runClimateEmulatorCmd <- paste(
   "--endyear", 2250,
   "--num-cfgs", nparsets,
   "--scenario-batch-size", 1,
-  "--probabilistic-file", probabilisticFile,
-  ">>", logFile, "2&>1" # Append stdout and stderr to log file
+  "--probabilistic-file", probabilisticFile#,
+  # ">>", logFile, "2&>1" # Append stdout and stderr to log file
 )
 
 #
@@ -265,62 +294,103 @@ runClimateEmulatorCmd <- paste(
 # if (startsWith(pythonBin, condaEnv)) {
 #   stop("Python binary is not in the conda environment")
 # }
-
 #
 # NEW HELPER FUNCTIONS
 #
-initPyEnvCmds <- function(pythonPath, logFile = stdout(), debug = FALSE) {
-  condaEnv <- normalizePath(pythonPath, mustWork = TRUE)
-  condaBin <- Sys.which("conda")
-  # Check if conda is available, otherwise use module load. PIK cluster specific!
-  if (condaBin == "") {
-    # setupEnvCmd <- paste("module load anaconda/2024.10 &>>", logFile, ";")
-    # teardownEnvCmd <- "module unload anaconda/2024.10;"
-    setupEnvCmd <- paste0("module load anaconda/2024.10 >> ", logFile, " 2&>1;")
-    teardownEnvCmd <- "module unload anaconda/2024.10;"
-  } else {
-    setupEnvCmd <- ""
-    teardownEnvCmd <- ""
-  }
-  # Check if conda environment is active, concatenate setupEnvCmd with source (conda) (de)activate command if not
-  if (Sys.getenv("CONDA_PREFIX") == "") {
-    setupEnvCmd <- paste(setupEnvCmd, "source activate", condaEnv, ";")
-    # Pre-pend here since conda has to be deactivated before module unload
-    teardownEnvCmd <- paste("conda deactivate;", teardownEnvCmd)
-  }
-  if (debug) {
-    setupEnvCmd <- paste(setupEnvCmd, "echo \"#### initPyEnvCmds\"; which python; which conda;")
-  }
-  return(list(setup = setupEnvCmd, teardown = teardownEnvCmd))
-}
-
-runInEnv <- function(cmd, pyEnv = list(setup = "", teardown = ""), logFile = stdout(), debug = FALSE) {
-  commands <- lapply(
-    list(pyEnv$setup, cmd, pyEnv$teardown),
+runInPyEnv <- function(cmd, condaPath, initCmds = list(setup = "", teardown = ""), logFile = NULL, verbosity = 0) {
+  # Embed the actual command into the conda run command, redirecting stdout and stderr to the log file
+  condaRunCmd <- paste(
+    "conda run -p", condaPath,
+    if (verbosity > 0) paste0("-", strrep("v", verbosity)),
+    cmd,
+    if (!is.null(logFile)) paste("&>>", logFile)
+  )
+  # Add setup/teardown commands. Ensure that each command ends with a semicolon
+  commands <- trimws(paste(unlist(lapply(
+    list(initCmds$setup, condaRunCmd, initCmds$teardown),
     # Ensure that each command ends with a semicolon
     function(command) {
-      if (nchar(command) > 0 && substr(command, nchar(command), nchar(command)) != ";") {
+      if (nchar(command) > 0 && !endsWith(command, ";")) {
         return(paste0(command, ";"))
       }
       return(command)
-    }
-  )
-  if (debug) {
+    })),
+    collapse = " "
+  ))
+  if (verbosity > 0) {
     logMsg <- paste0(
       date(), "  About to run\n",
       commands, "\n"
     )
     capture.output(cat(logMsg), file = logFile, append = TRUE)
   }
-  system(paste(commands))
+  system(commands)
 }
 
+condaRun <- function(cmd, condaPath, initCmds = list(setup = "", teardown = ""), logFile = NULL, verbosity = 0) {
+  # Embed the actual command into the conda run command, redirecting stdout and stderr to the log file
+  condaRunCmd <- paste(
+    "conda run -p", condaPath,
+    if (verbosity > 0) paste0("-", strrep("v", verbosity)),
+    cmd,
+    if (!is.null(logFile)) paste("&>>", logFile)
+  )
+  # Add setup/teardown commands. Ensure that each command ends with a semicolon
+  commands <- trimws(paste(
+    unlist(lapply(
+      list(initCmds$setup, condaRunCmd, initCmds$teardown),
+      # Ensure that each command ends with a semicolon
+      function(command) {
+        if (nchar(command) > 0 && !endsWith(command, ";")) {
+          return(paste0(command, ";"))
+        }
+        return(command)
+      }
+    )),
+    collapse = " "
+  ))
+  if (verbosity > 0) {
+    logMsg <- paste0(
+      date(), "  About to run\n",
+      commands, "\n"
+    )
+    capture.output(cat(logMsg), file = logFile, append = TRUE)
+  }
+  system(commands)
+}
+
+
+# cmd <- paste(
+#   "python", "climate_assessment_openscm_run.py",
+#   harmonizedInfilledFile,
+#   "--climatetempdir", climateTempDir,
+#   "--endyear", "2250",
+#   "--num-cfgs", "1",
+#   "--scenario-batch-size", "1",
+#   "--probabilistic-file", probFile # ,
+#   # "&>>", logFile
+# )
+# runInPyEnv(cmd, cfg$pythonPath, initPyEnvCmds, logFile, verbosity = 0)
+# runHarmoniseAndInfillCmd
+# runInPyEnv(runHarmoniseAndInfillCmd, cfg$pythonPath, initPyEnvCmds)
+runInPyEnv(runHarmoniseAndInfillCmd, cfg$pythonPath, initPyEnvCmds, logFile)
+# runClimateEmulatorCmd
+# runInPyEnv(runClimateEmulatorCmd, cfg$pythonPath, initPyEnvCmds, logFile, verbosity = 1)
+runInPyEnv(runClimateEmulatorCmd, cfg$pythonPath, initPyEnvCmds, verbosity = 1)
+# With capture.output
+# Warning message:
+# In sink(type = type, split = split) : no sink to remove
+# capture.output(
+#   runInPyEnv(runClimateEmulatorCmd, cfg$pythonPath, initPyEnvCmds, verbosity = 1),
+#   file = logFile, append = TRUE
+# )
 # Sanity check: Python binary is in the conda environment? Fail if not
 # pythonBin <- Sys.which("python")
 # if (!startsWith(pythonBin, condaEnv)) {
 #   stop("Python binary is not in the conda environment")
 # }
-pyEnv <- initPyEnvCmds(cfg$pythonPath, logFile, debug = TRUE)
+
+# pyEnv <- initPyEnvCmds(cfg$pythonPath, logFile, debug = TRUE)
 
 logMsg <- paste0(
   date(),
