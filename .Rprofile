@@ -13,7 +13,7 @@ if (!"https://rse.pik-potsdam.de/r/packages" %in% getOption("repos")) {
 }
 
 # bootstrapping, will only run once after remind is freshly cloned
-if (isTRUE(rownames(installed.packages(priority = "NA")) == "renv")) {
+if (!file.exists(".renv_bootstrapped") && isTRUE(rownames(installed.packages(priority = "NA")) == "renv")) {
   message("R package dependencies are not installed in this renv, installing now...")
   renv::install("rmarkdown", prompt = FALSE) # rmarkdown is required to find dependencies in Rmd files
   renv::hydrate(prompt = FALSE, report = FALSE) # auto-detect and install all dependencies
