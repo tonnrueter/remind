@@ -97,7 +97,8 @@ submit <- function(cfg, restart = FALSE, stopOnFolderCreateError = TRUE) {
       # init renv in a separate session so the libPaths of the current session remain unchanged
       callr::r(createResultsfolderRenv,
                wd = cfg$results_folder,
-               env = c(RENV_PATHS_LIBRARY = "renv/library"),
+               env = c(RENV_PATHS_LIBRARY = Sys.getenv("RENV_PATHS_LIBRARY",
+                                              unset = file.path(cfg$remind_folder, "renv/library"))),
                stdout = renvLogPath, stderr = "2>&1")
     }
 
