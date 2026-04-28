@@ -450,6 +450,11 @@ $setGlobal internalizeDamages  off               !! def = off
 *' * (off): No internalization
 *' * (coupled): Run LCA internalization workflow in between iterations
 $setGlobal internalizeLCAimpacts  off               !! def = off
+*'---------------------    53_adaptation    ----------------------------
+*'
+*' * (off): No adaptation
+*' * (DICE): simple adaptation like in AD-DICE
+$setGlobal adaptation  off               !! def = off
 *'---------------------    70_water  -------------------------------------------
 *'
 *' * (off): no water demand taken into account
@@ -2073,6 +2078,8 @@ $setGlobal cm_KotzWenzPerc mean !! def = mean !! regexp = low|med|mean|high
 $setGlobal cm_damage_COACCH_adaptSpec	noadapt  !! def = noadapt
 *' COACCH damage function percentile specification ,p5 is median(p05,p5,p59)
 $setGlobal cm_damage_COACCH_CIspec	p5  !! def = p5
+*' COACCH damage with separate SLR damage on or off
+$setGlobal cm_COACCH_SLR	off  !! def = off
 *** cfg$gms$cm_damage_Labor_exposure <- "low" # def = "low"; {low,high}
 $setGlobal cm_damage_Labor_exposure  low    !! def = low  !! regexp = low|high
 *** cfg$gms$cm_TCssp <- "SSP2"  #def = "SSP2"; {SSP2,SSP5} the scenario for which the damage function is specified - currently only SSP2 and SSP5 are available
