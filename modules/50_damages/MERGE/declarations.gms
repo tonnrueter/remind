@@ -4,28 +4,19 @@
 *** |  AGPL-3.0, you are granted additional permissions described in the
 *** |  REMIND License Exception, version 1.0 (see LICENSE file).
 *** |  Contact: remind@pik-potsdam.de
-*** SOF ./modules/50_damages/COACCH/declarations.gms
+*** SOF ./modules/50_damages/MERGE/declarations.gms
 parameters
 p50_damageFuncCoef0(all_regi)			"damage function coefficient, linear in temperature"
 p50_damageFuncCoef1(all_regi)			"damage function coefficient, linear in temperature"
 p50_damageFuncCoef2(all_regi) 			"damage function coefficient, quadratic in temperture"
+p50_damageFuncCoef3(all_regi) 			"damage function coefficient, quadratic in temperture"
+p50_damage(tall,all_regi)			"damage factor"
 pm_damage(tall,all_regi)			"damage factor for general use"
 pm_damageMarginal(tall,all_regi)		"marginal damage"
-p50_damage(tall,all_regi)			"damage factor"
-
-$ifthen.SLR "%cm_COACCH_SLR%" == "on"
-p50_SLRcoef1(all_regi)				"SLR damage function coefficient"
-p50_SLRcoef2(all_regi)				"SLR damage function coefficient"
-p50_SLRcoef3(all_regi)				"SLR damage function coefficient"
-p50_SLRdamage(tall,all_regi)			"SLR damage factor"
-pm_SLRdamageMarginal(tall,all_regi)		"SLR marginal damage"
-pm_damageNonSLR(tall,all_regi)			"non-SLR damage"
-pm_damageSLR(tall,all_regi)			"SLR damage"
-$endif.SLR
 ;
 
 positive variable
 vm_damageFactor(ttot,all_regi)      "damage factor reducing GDP"
 vm_damageProdFactor(ttot,all_regi,all_in)      "damage factor reducing production factors"
 ;
-*** EOF ./modules/50_damages/COACCH/declarations.gms
+*** EOF ./modules/50_damages/MERGE/declarations.gms

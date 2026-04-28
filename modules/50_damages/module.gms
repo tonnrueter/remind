@@ -21,6 +21,7 @@ $Ifi "%damages%" == "KWTCint" $include "./modules/50_damages/KWTCint/realization
 $Ifi "%damages%" == "KW_SE" $include "./modules/50_damages/KW_SE/realization.gms"
 $Ifi "%damages%" == "KotzWenz" $include "./modules/50_damages/KotzWenz/realization.gms"
 $Ifi "%damages%" == "Labor" $include "./modules/50_damages/Labor/realization.gms"
+$Ifi "%damages%" == "MERGE" $include "./modules/50_damages/MERGE/realization.gms"
 $Ifi "%damages%" == "TC" $include "./modules/50_damages/TC/realization.gms"
 $Ifi "%damages%" == "exogenous" $include "./modules/50_damages/exogenous/realization.gms"
 $Ifi "%damages%" == "off" $include "./modules/50_damages/off/realization.gms"
