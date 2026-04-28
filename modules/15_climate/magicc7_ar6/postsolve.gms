@@ -19,6 +19,8 @@
 
 if(iteration.val gt 1,
 
+display "Now running climate assessment"
+
 Execute_unload 'fulldata_postsolve';
 * Run the climate assessment script. Takes around 2-3m for a single parameter set, including harmonization and infilling
 
@@ -30,12 +32,20 @@ Execute "Rscript climateAssessmentInterimRun.R";
 *** Track runtime
 putclose runtime gyear(jnow):0:0 "-" gmonth(jnow):0:0 "-" gday(jnow):0:0 " " ghour(jnow):0:0 ":" gminute(jnow):0:0 ":" gsecond(jnow):0:0 ",GAMS," iteration.val:0;
 
-* Read in results
-Execute_Loadpoint 'p15_forc_magicc'  p15_forc_magicc;
-Execute_Loadpoint 'p15_magicc_temp' pm_globalMeanTemperature = pm_globalMeanTemperature;
+* Read in results - currently there is a mismatch between names and content in these files
+*Execute_Loadpoint 'p15_forc_magicc'  p15_forc_magicc;
+*Execute_Loadpoint 'p15_magicc_temp' pm_globalMeanTemperature = pm_globalMeanTemperature;
+*Execute_Loadpoint 'p15_globalMeanSLR' pm_globalMeanSLR = pm_globalMeanSLR;
+Execute_Loadpoint 'p15_forc_magicc'  pm_globalMeanTemperature;
+Execute_Loadpoint 'p15_magicc_temp' pm_globalMeanTemperature = pm_globalMeanSLR;
+Execute_Loadpoint 'p15_globalMeanSLR' pm_globalMeanSLR = p15_forc_magicc;
 
-*** climate_assessment only reports until 2100:
-pm_globalMeanTemperature(tall)$(tall.val gt 2100) = pm_globalMeanTemperature("2100");
+*** climate_assessment only reports until 2100 - not true anymore, reports until 2250
+pm_globalMeanTemperature(tall)$(tall.val gt 2250) = pm_globalMeanTemperature("2250");
+pm_globalMeanSLR(tall)$(tall.val gt 2250) = pm_globalMeanSLR("2250");
+
+*** convert SLR from mm to m
+pm_globalMeanSLR(tall) = pm_globalMeanSLR(tall)/1000;
 
 ***---------------------------------------------------------------------------
 *' Raw temperature (GMT anomaly) from MAGICC is further calibrated to match HADCRUT4 in 2000. 
@@ -50,7 +60,7 @@ $ifthen.cm_magicc_calibrateTemperature2000 %cm_magicc_calibrateTemperature2000% 
 s15_tempOffset2010 = sum(tall$(tall.val gt 2005 and tall.val le 2015),pm_globalMeanTemperature(tall))/10; 
 display s15_tempOffset2010;
 pm_globalMeanTemperature(tall) = pm_globalMeanTemperature(tall) - s15_tempOffset2010 + 0.97;
-display pm_globalMeanTemperature;
+display pm_globalMeanTemperature, pm_globalMeanSLR;
 
 *** temperature convergence indicator
 pm_gmt_conv = 100*smax(t,abs(pm_globalMeanTemperature(t)/max(p15_gmt0(t),1e-8) -1));
