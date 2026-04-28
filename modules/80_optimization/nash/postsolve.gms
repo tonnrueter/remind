@@ -404,9 +404,15 @@ $ifthen.carbonprice %carbonprice% == "functionalForm"
 *** positive values of sm_globalBudget_absDev mean that target budget is exceeded (sm_globalBudget_absDev = s45_actualbudgetco2 - cm_budgetCO2from2020)
 *** if damages are not internalized, check positive and negative deviation from target budget
 *** if damages are internalized, only check positive deviation from target budget
+$ifthen.carbonprice %carbonprice% == "functionalForm"
+*** check global budget target from 45_carbonprice/functionalForm/postsolve
+*** convergence criterion defined via cm_budgetCO2_absDevTol [default = 2 Gt CO2]
+*** positive values of sm_globalBudget_absDev mean that target budget is exceeded (sm_globalBudget_absDev = s45_actualbudgetco2 - cm_budgetCO2from2020)
+*** if damages are not internalized, check positive and negative deviation from target budget
+*** if damages are internalized, only check positive deviation from target budget
 p80_globalBudget_absDev_iter(iteration) = sm_globalBudget_absDev;
-$ifthen.globalBudget "%internalizeDamages%" == "off"
-  if (abs(p80_globalBudget_absDev_iter(iteration)) gt cm_budgetCO2_absDevTol,
+$ifthen.globalBudget %internalizeDamages% == "off"
+  if ( abs(p80_globalBudget_absDev_iter(iteration)) gt cm_budgetCO2_absDevTol , !! check if CO2 budget met in tolerance range,
     s80_bool = 0;
     p80_messageShow("globalbudget") = YES;
   );
