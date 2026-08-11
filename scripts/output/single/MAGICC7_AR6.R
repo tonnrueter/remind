@@ -61,11 +61,24 @@ runHarmoniseAndInfillCmd <- paste(
   "--infilling-database", cfg$infillingDatabase
 )
 
+# Optional flags that broaden the reported climate variables. Each is only appended when the
+# corresponding cfg entry is set (see climateAssessmentConfig / default.cfg); otherwise the
+# climate-assessment built-in defaults are used and behaviour is unchanged.
+optionalEmulatorArgs <- c(
+  # Pass the MAGICC version we compiled so the emulator's version assert passes for non-default
+  # (e.g. SLR-capable) builds
+  if (!is.null(cfg$magiccVersion)) paste("--model-version", cfg$magiccVersion),
+  if (!is.null(cfg$magiccExtraConfig)) paste("--magicc-extra-config", cfg$magiccExtraConfig),
+  if (!is.null(cfg$outputVariablesFile)) paste("--output-variables-file", cfg$outputVariablesFile),
+  if (!is.null(cfg$variableDefinitionsFile)) paste("--variable-definitions-file", cfg$variableDefinitionsFile)
+)
+
 runClimateEmulatorCmd <- paste(
   "python", file.path(cfg$scriptsDir, "run_clim.py"), cfg$harmInfEmissionsFile, cfg$climateDir,
   "--num-cfgs", cfg$nSets,
   "--scenario-batch-size", 1,
-  "--probabilistic-file", cfg$probabilisticFile
+  "--probabilistic-file", cfg$probabilisticFile,
+  paste(optionalEmulatorArgs, collapse = " ")
 )
 
 runTimes <- c(runTimes, "set_up_assessment end" = Sys.time())
