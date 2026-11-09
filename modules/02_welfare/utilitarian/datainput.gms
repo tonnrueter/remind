@@ -10,7 +10,7 @@
 *FP* fix it to zero unless the mortality switch is on - then this is calculated in module 50
 vm_mortalityDamage.l(ttot,regi) = 0;
 vm_mortalityDamage.fx(ttot,regi)$(ttot.val lt cm_startyear) = 0;
-$ifthen.mortality "$cm_mortality%" == "off"
+$ifthen.mortality "%cm_mortality%" == "off"
 vm_mortalityDamage.fx(ttot,regi)$(ttot.val ge cm_startyear) = 0;
 $endif.mortality
 
