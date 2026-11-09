@@ -85,9 +85,9 @@ if( ((iteration.val le 10) or ( mod(iteration.val,5 ) eq 0)) ,
     execute_loadpoint 'pm_magicc_temperatureImpulseResponse'  pm_temperatureImpulseResponseCO2 = pm_temperatureImpulseResponse;
 $ifthen.cm_SLR %cm_SLR% == "on"
     execute_loadpoint 'pm_magicc_slrImpulseResponse' pm_slrImpulseResponseCO2 = pm_slrImpulseResponse;
-    pm_slrImpulseResponseCO2(tall2,tall) = pm_slrImpulseResponseCO2(tall2,tall)/1000;	
-);
+    pm_slrImpulseResponseCO2(tall2,tall) = pm_slrImpulseResponseCO2(tall2,tall)/1000;
 $endif.cm_SLR
+);
 *NOTE the MAGICC results (*.OUT files) are from  the last pulse experiment now, so take care if reading them in after this point.
 $endif.cm_magicc_tirf
 
