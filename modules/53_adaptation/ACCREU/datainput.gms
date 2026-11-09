@@ -9,7 +9,7 @@
 *satisfy dependencies
 $ifi not %damages% == 'ACCREU' abort "module adaptation=ACCREU requires module damages=ACCREU";
 
-p53_adapt1(regi) = 0
+p53_adapt1(regi) = 0;
 p53_adapt2(regi) = 0;
 
 *non-SLR 
