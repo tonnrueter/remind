@@ -80,10 +80,15 @@ $offdelim
 p02_damConsFactor1(ttot,regi)=f02_damConsFactor(regi,"f1");
 p02_damConsFactor2(ttot,regi)=f02_damConsFactor(regi,"f2");
 
+*satisfy dependencies
+$ifi %cm_mortality% == 'on' $ifi not %damages% == 'ACCREU' abort "cm_mortality=on requires module damages=ACCREU";
+
 *FP* initialize the mortality damage as 0, fix it to zero before start year
 *FP* fix it to zero unless the mortality switch is on - then this is calculated in module 50
 vm_mortalityDamage.l = 0;
 vm_mortalityDamage.fx(ttot,regi)$(ttot.val lt cm_startyear) = 0;
-vm_mortalityDamage.fx(ttot,regi)$(ttot.val ge cm_startyear & sameas('%cm_mortality%','on')) = 0;
+$ifthen.mortality %cm_mortality% == "off"
+vm_mortalityDamage.fx(ttot,regi)$(ttot.val ge cm_startyear) = 0;
+$endif.mortality
 
 *** EOF ./modules/02_welfare/ineqLognormal/datainput.gms

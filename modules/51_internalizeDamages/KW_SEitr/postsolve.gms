@@ -13,7 +13,7 @@ p51_sccParts(tall,tall2,regi2)$((tall.val ge 2010) and (tall.val le 2150) and (t
 	 (1 + pm_prtp(regi2) )**(-(tall2.val - tall.val))
 	* (pm_consPC(tall,regi2)/(pm_consPC(tall2,regi2) + sm_eps))**(1/pm_ies(regi2))
         * pm_GDPGross(tall2,regi2) 
-	* (pm_damage(tall2,regi2)-pm_damageImp(tall,tall2,regi2)) 
+	* ((1-pm_damage(tall2,regi2))-pm_damageImp(tall,tall2,regi2)) 
 ;
 
 *convert unit from tr$/GtC to $/tCO2 as GDP is in tr$ and pulse is 1 GtC

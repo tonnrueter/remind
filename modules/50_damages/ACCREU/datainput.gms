@@ -85,13 +85,13 @@ p50_mortalityHeatCoef0(regi)=p50_mortalityHeatCoefs(regi,"a");
 p50_mortalityHeatCoef1(regi)=p50_mortalityHeatCoefs(regi,"b1");
 
 ***
+*initialize
 p50_SLRdamage(tall,regi) = 0;
 pm_damageNonSLR(tall,regi) = 0;
 pm_damageSLR(tall,regi) = 0;
 pm_laborBenefit(tall,regi) = 0;
 
-*initialize
-pm_damage(tall,regi) = 1;
+pm_damage(tall,regi) = 0;
 p50_nonSLRdamage(tall,regi) = 1;
 pm_mortalityDamage(ttot,regi) = 0;
 pm_mortalityDamageMarginal(ttot,regi) = 0;

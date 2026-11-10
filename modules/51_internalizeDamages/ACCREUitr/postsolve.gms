@@ -30,7 +30,7 @@ pm_taxCO2eqSCC(ttot,regi) = 0;
 *** normally this is set to cm_startyear
 loop(ttot$(ttot.val ge cm_SCCstartyear),
 	loop(tall$(pm_ttot_2_tall(ttot,tall)),
-	    pm_taxCO2eqSCC(ttot,regi)$(ttot.val ge cm_SCCstartyear) = p51_scc(tall)   * sm_c_2_co2/1000;
+	    pm_taxCO2eqSCC(ttot,regi)$(ttot.val ge cm_SCCstartyear) = p51_scc(tall)   * sm_DptCO2_2_TDpGtC;
 	));
 	    
 	    

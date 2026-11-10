@@ -21,7 +21,7 @@ p51_sccLastItr(tall,regi) = p51_scc(tall,regi);
 p51_sccParts(tall,tall2,regi)$((tall.val ge 2010) and (tall.val le 2150) and (tall2.val ge tall.val) and (tall2.val le 2250)) = 
 	 (1 + pm_prtp(regi) )**(-(tall2.val - tall.val))
 *	* pm_consPC(tall,regi)/pm_consPC(tall2,regi) 
-        * pm_damage(tall2,regi) * pm_GDPGross(tall2,regi) 
+        * (1-pm_damage(tall2,regi)) * pm_GDPGross(tall2,regi) 
 	* p51_marginalDamageCumul(tall,tall2,regi) 
 	* pm_sccIneq(tall2,regi)
 ;
