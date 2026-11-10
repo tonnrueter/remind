@@ -6,6 +6,9 @@
 *** |  Contact: remind@pik-potsdam.de
 *** SOF ./modules/02_welfare/utilitarian/datainput.gms
 
+*satisfy dependencies
+$ifi %cm_mortality% == 'on' $ifi not %damages% == 'ACCREU' abort "cm_mortality=on requires module damages=ACCREU";
+
 *FP* initialize the mortality damage as 0, fix it to zero before start year
 *FP* fix it to zero unless the mortality switch is on - then this is calculated in module 50
 vm_mortalityDamage.l(ttot,regi) = 0;
