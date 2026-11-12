@@ -11,6 +11,6 @@ vm_damageFactorAdapt.fx(ttot,regi)$(ttot.val lt cm_startyear) = 1;
 vm_damageFactorAdapt.fx(ttot,regi)$(ttot.val ge cm_startyear) = 1-(pm_damage(ttot,regi)+pm_laborBenefit(ttot,regi));
 $else
 vm_damageFactorAdapt.fx(ttot,regi) = 1;
-$nendif
+$endif
 
 *** EOF ./modules/53_adaptation/off/bounds.gms
