@@ -2153,7 +2153,6 @@ parameter
 ;
   cm_adaLim = 1;      !! def = 1  !! regexp = 1|2|3
 *** cfg$gms$cm_damage_Labor_exposure <- "low" # def = "low"; {low,high}
-*** cfg$gms$cm_damage_Labor_exposure <- "low" # def = "low"; {low,high}
 $setGlobal cm_damage_Labor_exposure  low    !! def = low  !! regexp = low|high
 *** cfg$gms$cm_TCssp <- "SSP2"  #def = "SSP2"; {SSP2,SSP5} the scenario for which the damage function is specified - currently only SSP2 and SSP5 are available
 $setGlobal cm_TCssp  SSP2  !! def = SSP2  !! regexp = SSP2|SSP5
